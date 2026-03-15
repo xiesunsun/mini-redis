@@ -1,8 +1,8 @@
 # mini-redis
-一个用Go 实现的Redis 服务器，目标是支持核心命令、三种数据类型和AOF持久化。能够被真实的redis-ci连接和使用。
+一个用Go 实现的Redis 服务器，目标是支持核心命令、三种数据类型和AOF持久化。能够被真实的redis-cli连接和使用。
 
 ## 文档目录
-- 架构设计与分层规则 -> docs/architechture.md
+- 架构设计与分层规则 -> docs/architecture.md
 - RESP 协议格式 -> docs/resp-protocol.md
 - 支持的命令列表 -> docs/commands.md
 
@@ -15,10 +15,10 @@ types -> store -> expiry -> command->network-> cmd/server
 ```
 各层职责
 - types：所有共享数据结构定义、不依赖于任何层
-- stores：内存数据存储，只依赖types
-- expiry：过期键清理。只依赖stores
-- persistency：AOF持久化，只依赖store
-- command：命令解析与执行，依赖store/expiry/persistency
+- store：内存数据存储，只依赖types
+- expiry：过期键清理。只依赖store   
+- persistence：AOF持久化，只依赖store
+- command：命令解析与执行，依赖store/expiry/persistence
 - network：TCP 连接与RESP 协议，只依赖command
 - cmd/server：程序入口，负责组装所有层启动服务器
 
@@ -26,9 +26,24 @@ types -> store -> expiry -> command->network-> cmd/server
 以下依赖在CI中会被check-deps.sh自动检测，违反则构建失败：
 - store禁止依赖command / network
 - expiry 禁止引用 command / network
-- persistency 禁止引用 command / network
+- persistence 禁止引用 command / network
 - command 禁止引用 network
 - types 禁止引用任何内部包
+
+## 常用命令
+**开发环境**
+- 编译检查：`go build ./...`
+- 依赖层级检查： `bash scripts/check_deps.sh`
+- 启动服务器： `go run cmd/server/main.go`
+- 跑测试： `go test ./...`
+
+**验证行为**
+- 启动服务器后，使用redis-cli连接：`redis-cli -p 6379`
+- 对照官方redis 行为验证：同一命令在官方Redis和本项目上输出必须要一致
+## 遇到不确定的情况
+- 不要大范围猜测性的修改代码
+- 先在PR描述里写清楚方案，等确认后再动手
+- 如果某个命令不确定，查docs/commands.md里的说明
 
 ## 开发规范
 **新增文件**
