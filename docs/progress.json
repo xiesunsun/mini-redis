@@ -105,7 +105,7 @@
             "layer": "command",
             "file": "internal/command/router.go",
             "description": "实现命令路由表：将命令名映射到对应 handler 函数，提供 Dispatch 入口。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "command-handlers"
             ]
