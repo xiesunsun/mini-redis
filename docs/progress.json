@@ -69,7 +69,7 @@
             "file": "internal/expiry/cleaner.go",
             "test_file": "internal/expiry/cleaner_test.go",
             "description": "实现惰性删除和定期删除两种过期清理策略。同时编写 cleaner_test.go，使用极短时间（1ms）模拟过期行为。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "store-core"
             ]
