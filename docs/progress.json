@@ -23,7 +23,7 @@
             "layer": "store",
             "file": "internal/store/store.go",
             "description": "定义 Store 结构体：map[string]*types.Value 存储数据，sync.RWMutex 保证并发安全；提供 Get、Set、Delete、Keys 基础操作",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "types-value",
                 "types-command"
