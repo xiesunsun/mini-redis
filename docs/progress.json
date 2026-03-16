@@ -200,7 +200,7 @@
             "file": "internal/persistence/aof.go",
             "test_file": "internal/persistence/aof_test.go",
             "description": "增强 AOF Replay 解析健壮性：避免基于 Scanner 的行级解析限制，严格校验 RESP bulk 长度与边界，完善异常输入与大 payload 用例。",
-            "status": "todo",
+            "status": "done",
             "depends_on": [
                 "persistence-aof"
             ]

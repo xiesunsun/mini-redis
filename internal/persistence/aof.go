@@ -2,7 +2,9 @@ package persistence
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -52,42 +54,87 @@ func (a *AOF) Replay() ([]types.Command, error) {
 		return nil, err
 	}
 
+	reader := bufio.NewReader(a.file)
 	var cmds []types.Command
-	scanner := bufio.NewScanner(a.file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !strings.HasPrefix(line, "*") {
-			return nil, fmt.Errorf("invalid AOF format: expected '*', got %q", line)
-		}
-		argc, err := strconv.Atoi(line[1:])
+	for {
+		cmd, err := readAOFCommand(reader)
 		if err != nil {
-			return nil, fmt.Errorf("invalid argument count: %v", err)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
 		}
-
-		args := make([]string, argc)
-		for i := 0; i < argc; i++ {
-			if !scanner.Scan() {
-				return nil, fmt.Errorf("unexpected EOF reading bulk length")
-			}
-			bulkLine := scanner.Text()
-			if !strings.HasPrefix(bulkLine, "$") {
-				return nil, fmt.Errorf("invalid bulk format: expected '$', got %q", bulkLine)
-			}
-			if !scanner.Scan() {
-				return nil, fmt.Errorf("unexpected EOF reading bulk data")
-			}
-			args[i] = scanner.Text()
-		}
-
-		cmds = append(cmds, types.Command{
-			Name: strings.ToUpper(args[0]),
-			Args: args[1:],
-		})
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
+		cmds = append(cmds, cmd)
 	}
 	return cmds, nil
+}
+
+func readAOFCommand(r *bufio.Reader) (types.Command, error) {
+	header, err := readRESPLine(r)
+	if err != nil {
+		return types.Command{}, err
+	}
+	if !strings.HasPrefix(header, "*") {
+		return types.Command{}, fmt.Errorf("invalid AOF format: expected array header, got %q", header)
+	}
+
+	argc, err := strconv.Atoi(header[1:])
+	if err != nil {
+		return types.Command{}, fmt.Errorf("invalid argument count %q", header[1:])
+	}
+	if argc <= 0 {
+		return types.Command{}, fmt.Errorf("invalid argument count %d", argc)
+	}
+
+	args := make([]string, 0, argc)
+	for i := 0; i < argc; i++ {
+		bulkHeader, err := readRESPLine(r)
+		if err != nil {
+			return types.Command{}, fmt.Errorf("read bulk[%d] header: %w", i, err)
+		}
+		if !strings.HasPrefix(bulkHeader, "$") {
+			return types.Command{}, fmt.Errorf("invalid bulk header %q", bulkHeader)
+		}
+
+		n, err := strconv.Atoi(bulkHeader[1:])
+		if err != nil {
+			return types.Command{}, fmt.Errorf("invalid bulk length %q", bulkHeader[1:])
+		}
+		if n < 0 {
+			return types.Command{}, fmt.Errorf("invalid bulk length %d", n)
+		}
+
+		buf := make([]byte, n+2)
+		if _, err := io.ReadFull(r, buf); err != nil {
+			return types.Command{}, fmt.Errorf("read bulk[%d] body: %w", i, err)
+		}
+		if buf[n] != '\r' || buf[n+1] != '\n' {
+			return types.Command{}, fmt.Errorf("bulk[%d] missing CRLF terminator", i)
+		}
+		args = append(args, string(buf[:n]))
+	}
+
+	return types.Command{
+		Name: strings.ToUpper(args[0]),
+		Args: args[1:],
+	}, nil
+}
+
+func readRESPLine(r *bufio.Reader) (string, error) {
+	line, err := r.ReadString('\n')
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			if len(line) == 0 {
+				return "", io.EOF
+			}
+			return "", io.ErrUnexpectedEOF
+		}
+		return "", err
+	}
+	if len(line) < 2 || !strings.HasSuffix(line, "\r\n") {
+		return "", errors.New("line missing CRLF terminator")
+	}
+	return strings.TrimSuffix(line, "\r\n"), nil
 }
 
 // Close 关闭 AOF 文件。

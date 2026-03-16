@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/xiesunsun/mini-redis/internal/types"
@@ -26,6 +27,36 @@ func tempAOF(t *testing.T) (*AOF, string) {
 		os.Remove(path)
 	})
 	return aof, path
+}
+
+func tempAOFWithRawContent(t *testing.T, content string) *AOF {
+	t.Helper()
+
+	f, err := os.CreateTemp("", "aof_test_*.aof")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	if _, err := f.WriteString(content); err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		t.Fatalf("failed to write temp file: %v", err)
+	}
+	path := f.Name()
+	if err := f.Close(); err != nil {
+		os.Remove(path)
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	aof, err := New(path)
+	if err != nil {
+		os.Remove(path)
+		t.Fatalf("failed to open AOF: %v", err)
+	}
+	t.Cleanup(func() {
+		aof.Close()
+		os.Remove(path)
+	})
+	return aof
 }
 
 func TestReplay_EmptyFile(t *testing.T) {
@@ -129,5 +160,81 @@ func TestReplay_MultipleReplays(t *testing.T) {
 		if len(cmds) != 1 || cmds[0].Name != "GET" {
 			t.Errorf("Replay[%d]: unexpected result %+v", i, cmds)
 		}
+	}
+}
+
+func TestReplay_LargePayload(t *testing.T) {
+	aof, _ := tempAOF(t)
+	largeValue := strings.Repeat("x", 128*1024)
+
+	if err := aof.WriteCommand(types.Command{Name: "SET", Args: []string{"k", largeValue}}); err != nil {
+		t.Fatalf("WriteCommand error: %v", err)
+	}
+
+	cmds, err := aof.Replay()
+	if err != nil {
+		t.Fatalf("Replay error: %v", err)
+	}
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 command, got %d", len(cmds))
+	}
+	if cmds[0].Name != "SET" || len(cmds[0].Args) != 2 {
+		t.Fatalf("unexpected command shape: %+v", cmds[0])
+	}
+	if cmds[0].Args[1] != largeValue {
+		t.Fatalf("payload mismatch: want length %d, got %d", len(largeValue), len(cmds[0].Args[1]))
+	}
+}
+
+func TestReplay_InvalidRESP(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "invalid array prefix",
+			raw:  "$1\r\na\r\n",
+		},
+		{
+			name: "invalid array length",
+			raw:  "*x\r\n",
+		},
+		{
+			name: "zero argc",
+			raw:  "*0\r\n",
+		},
+		{
+			name: "invalid bulk header prefix",
+			raw:  "*1\r\n!3\r\nSET\r\n",
+		},
+		{
+			name: "invalid bulk length",
+			raw:  "*1\r\n$abc\r\nSET\r\n",
+		},
+		{
+			name: "negative bulk length",
+			raw:  "*1\r\n$-2\r\n",
+		},
+		{
+			name: "truncated bulk body",
+			raw:  "*2\r\n$3\r\nSET\r\n$5\r\nabc\r\n",
+		},
+		{
+			name: "bulk missing CRLF terminator at boundary",
+			raw:  "*2\r\n$3\r\nSET\r\n$5\r\nabcdex\r\n",
+		},
+		{
+			name: "line without CRLF",
+			raw:  "*1\r\n$3\r\nSET\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			aof := tempAOFWithRawContent(t, tc.raw)
+			if _, err := aof.Replay(); err == nil {
+				t.Fatal("expected Replay to fail, got nil error")
+			}
+		})
 	}
 }
