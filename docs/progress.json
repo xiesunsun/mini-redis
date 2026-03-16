@@ -24,7 +24,7 @@
             "file": "internal/store/store.go",
             "test_file": "internal/store/store_test.go",
             "description": "定义 Store 结构体：map[string]*types.Value 存储数据，sync.RWMutex 保证并发安全；提供 Get、Set、Delete、Keys 基础操作。同时编写 store_test.go，覆盖正常路径、key 不存在、类型不匹配等行为。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "types-value",
                 "types-command"
