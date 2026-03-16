@@ -47,7 +47,7 @@
             "file": "internal/store/list.go",
             "test_file": "internal/store/list_test.go",
             "description": "实现 List 类型操作：LPush、RPush、LRange、LLen、LPop、RPop。同时编写 list_test.go，覆盖正常路径、空列表、越界范围、类型不匹配等行为。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "store-core"
             ]
