@@ -170,6 +170,51 @@
             "depends_on": [
                 "network-server"
             ]
+        },
+        {
+            "id": "command-arity-strict",
+            "layer": "command",
+            "file": "internal/command/handlers.go",
+            "test_file": "internal/command/handlers_test.go",
+            "description": "将 16 条核心命令的参数校验从“至少 N 个参数”改为“必须等于 N 个参数（或命令规范要求的数量）”，多余参数时返回 wrong number of arguments，确保与官方 Redis 行为一致。",
+            "status": "todo",
+            "depends_on": [
+                "command-handlers"
+            ]
+        },
+        {
+            "id": "command-aof-write-error",
+            "layer": "command",
+            "file": "internal/command/handlers.go",
+            "test_file": "internal/command/handlers_test.go",
+            "description": "修复写 AOF 错误被忽略的问题：写入失败时向客户端返回错误响应，并补充对应单测，避免“命令返回成功但未持久化”的数据一致性风险。",
+            "status": "todo",
+            "depends_on": [
+                "command-handlers",
+                "persistence-aof"
+            ]
+        },
+        {
+            "id": "persistence-aof-replay-robust",
+            "layer": "persistence",
+            "file": "internal/persistence/aof.go",
+            "test_file": "internal/persistence/aof_test.go",
+            "description": "增强 AOF Replay 解析健壮性：避免基于 Scanner 的行级解析限制，严格校验 RESP bulk 长度与边界，完善异常输入与大 payload 用例。",
+            "status": "todo",
+            "depends_on": [
+                "persistence-aof"
+            ]
+        },
+        {
+            "id": "test-redis-compat-extra-args",
+            "layer": "tests",
+            "file": "tests/string_test.go",
+            "description": "新增 redis-cli 兼容性回归测试：覆盖 SET/GET/EXPIRE/LPUSH/RPUSH/HSET 等命令在“多余参数”场景下应返回 wrong number of arguments。",
+            "status": "todo",
+            "depends_on": [
+                "command-arity-strict",
+                "network-server"
+            ]
         }
     ]
 }
