@@ -91,7 +91,7 @@
             "file": "internal/command/handlers.go",
             "test_file": "internal/command/handlers_test.go",
             "description": "实现全部 16 条命令的 handler 函数。同时编写 handlers_test.go，初始化真实 store 实例进行测试。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "store-string",
                 "store-list",
