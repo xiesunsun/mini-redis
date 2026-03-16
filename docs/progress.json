@@ -36,7 +36,7 @@
             "file": "internal/store/string.go",
             "test_file": "internal/store/string_test.go",
             "description": "实现 String 类型操作：SetString（写入 string 值）、GetString（读取并校验类型）、DeleteKey（删除 key）。同时编写 string_test.go，覆盖正常路径、key 不存在、类型不匹配等行为。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "store-core"
             ]
