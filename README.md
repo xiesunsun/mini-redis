@@ -85,6 +85,45 @@ go test ./...
 - `scripts/check_deps.sh` 会检查分层依赖是否合法，并检查实现文件是否有对应测试文件（`types` 层除外）
 - `go test ./...` 包含单元测试与网络层/端到端测试
 
+## Release 发布（GitHub Actions）
+
+本项目通过 `.github/workflows/release.yml` 自动构建并发布 Release。
+
+### 1. 准备发布版本号
+
+示例：`v1.0.0`。
+
+### 2. 在远端 main 对应提交打 tag 并推送
+
+```bash
+git fetch origin
+git tag -d v1.0.0 2>/dev/null || true
+git tag -a v1.0.0 origin/main -m "release v1.0.0"
+git push origin v1.0.0
+```
+
+说明：
+- `origin/main` 可避免本地分支落后导致 tag 打到错误提交
+- 推送 tag 后会自动触发 `Release` workflow
+
+### 3. 查看构建与发布结果
+
+可在 GitHub 仓库的 `Actions` 页面查看 `Release` 工作流状态，成功后会自动创建同名 Release 并上传附件。
+
+### 4. 产物命名规则
+
+- macOS Apple Silicon: `mini-redis_darwin_arm64`
+- macOS Intel: `mini-redis_darwin_amd64`
+- Linux AMD64: `mini-redis_linux_amd64`
+- Linux ARM64: `mini-redis_linux_arm64`
+- Windows AMD64: `mini-redis_windows_amd64.exe`
+- Windows ARM64: `mini-redis_windows_arm64.exe`
+- 校验文件: `SHA256SUMS`
+
+### 5. 重新发布同一版本（可选）
+
+如果同版本 tag/release 已存在，需要先删除远端 Release 与 tag，再重新执行第 2 步。
+
 ## 当前限制
 
 - `DEL` 暂不支持一次删除多个 key
