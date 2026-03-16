@@ -156,7 +156,7 @@
             "layer": "tests",
             "file": "tests/list_test.go",
             "description": "端到端集成测试：建立真实 TCP 连接，覆盖 LPUSH/RPUSH/LRANGE/LLEN/LPOP/RPOP 六条命令的正常路径和边界情况。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "network-server"
             ]
