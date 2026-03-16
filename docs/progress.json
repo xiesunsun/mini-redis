@@ -1,0 +1,171 @@
+{
+    "project": "mini-redis",
+    "generated_at": "2026-03-16",
+    "tasks": [
+        {
+            "id": "types-value",
+            "layer": "types",
+            "file": "internal/types/value.go",
+            "description": "定义 Value 结构体：DataType 枚举（String/List/Hash）、Data 字段（interface{}）、Expiry 字段（time.Time，零值表示永不过期）",
+            "status": "done",
+            "depends_on": []
+        },
+        {
+            "id": "types-command",
+            "layer": "types",
+            "file": "internal/types/command.go",
+            "description": "定义 Command 结构体：Name（命令名称，如 SET/GET）、Args（参数列表 []string）",
+            "status": "done",
+            "depends_on": []
+        },
+        {
+            "id": "store-core",
+            "layer": "store",
+            "file": "internal/store/store.go",
+            "description": "定义 Store 结构体：map[string]*types.Value 存储数据，sync.RWMutex 保证并发安全；提供 Get、Set、Delete、Keys 基础操作",
+            "status": "pending",
+            "depends_on": [
+                "types-value",
+                "types-command"
+            ]
+        },
+        {
+            "id": "store-string",
+            "layer": "store",
+            "file": "internal/store/string.go",
+            "description": "实现 String 类型操作：SetString（写入 string 值）、GetString（读取并校验类型）、DeleteKey（删除 key）",
+            "status": "pending",
+            "depends_on": [
+                "store-core"
+            ]
+        },
+        {
+            "id": "store-list",
+            "layer": "store",
+            "file": "internal/store/list.go",
+            "description": "实现 List 类型操作：LPush（从左插入）、RPush（从右插入）、LRange（取范围切片）、LLen（返回长度）、LPop（弹出最左元素）、RPop（弹出最右元素）",
+            "status": "pending",
+            "depends_on": [
+                "store-core"
+            ]
+        },
+        {
+            "id": "store-hash",
+            "layer": "store",
+            "file": "internal/store/hash.go",
+            "description": "实现 Hash 类型操作：HSet（设置 field）、HGet（获取 field）、HDel（删除 field）、HGetAll（返回所有 field-value 对）、HExists（判断 field 是否存在）",
+            "status": "pending",
+            "depends_on": [
+                "store-core"
+            ]
+        },
+        {
+            "id": "expiry-cleaner",
+            "layer": "expiry",
+            "file": "internal/expiry/cleaner.go",
+            "description": "实现两种过期清理策略：惰性删除（访问时检查 Expiry，过期则删除并返回 nil）；定期删除（每 100ms 扫描一批 key，清理已过期的）",
+            "status": "pending",
+            "depends_on": [
+                "store-core"
+            ]
+        },
+        {
+            "id": "persistence-aof",
+            "layer": "persistence",
+            "file": "internal/persistence/aof.go",
+            "description": "实现 AOF 持久化：WriteCommand（将命令原文追加写入 aof 文件）；Replay（服务器启动时重新执行 aof 文件中的所有命令恢复数据）",
+            "status": "pending",
+            "depends_on": [
+                "store-core"
+            ]
+        },
+        {
+            "id": "command-router",
+            "layer": "command",
+            "file": "internal/command/router.go",
+            "description": "实现命令路由表：将命令名（大写）映射到对应 handler 函数；提供 Dispatch 入口，接收 types.Command 返回 RESP 响应字节",
+            "status": "pending",
+            "depends_on": [
+                "store-string",
+                "store-list",
+                "store-hash",
+                "expiry-cleaner",
+                "persistence-aof"
+            ]
+        },
+        {
+            "id": "command-handlers",
+            "layer": "command",
+            "file": "internal/command/handlers.go",
+            "description": "实现全部 16 条命令的 handler 函数。String(5)：SET、GET、DEL、EXPIRE、TTL；List(6)：LPUSH、RPUSH、LRANGE、LLEN、LPOP、RPOP；Hash(5)：HSET、HGET、HDEL、HGETALL、HEXISTS",
+            "status": "pending",
+            "depends_on": [
+                "command-handlers"
+            ]
+        },
+        {
+            "id": "network-resp",
+            "layer": "network",
+            "file": "internal/network/resp.go",
+            "description": "实现 RESP 协议解析与序列化：Parse（从 bufio.Reader 读取并解析 RESP 格式，返回 types.Command）；Serialize（将命令执行结果序列化为 RESP 格式字节流，覆盖 SimpleString、Error、Integer、BulkString、Array 五种类型）",
+            "status": "pending",
+            "depends_on": [
+                "command-router"
+            ]
+        },
+        {
+            "id": "network-server",
+            "layer": "network",
+            "file": "internal/network/server.go",
+            "description": "实现 TCP 服务器：监听 6379 端口，每个客户端连接开一个 goroutine；循环读取 RESP 请求 → 调用 command.Dispatch → 写回 RESP 响应；处理连接关闭和错误",
+            "status": "pending",
+            "depends_on": [
+                "command-handlers",
+                "network-resp"
+            ]
+        },
+        {
+            "id": "server-main",
+            "layer": "cmd/server",
+            "file": "cmd/server/main.go",
+            "description": "程序入口：初始化 Store、加载 AOF 恢复数据、启动 expiry 定期清理 goroutine、启动 network.Server 开始监听",
+            "status": "pending",
+            "depends_on": [
+                "network-server"
+            ]
+        },
+        {
+            "id": "test-string",
+            "layer": "tests",
+            "file": "tests/string_test.go",
+            "description": "集成测试：覆盖 SET/GET/DEL/EXPIRE/TTL 五条命令的正常路径、WRONGTYPE 错误、key 不存在返回 nil、过期后返回 nil 等边界情况",
+            "status": "pending",
+            "depends_on": [
+                "command-handlers",
+                "network-server"
+            ]
+        },
+        {
+            "id": "test-list",
+            "layer": "tests",
+            "file": "tests/list_test.go",
+            "description": "集成测试：覆盖 LPUSH/RPUSH/LRANGE/LLEN/LPOP/RPOP 六条命令，包括空列表、越界范围、WRONGTYPE 错误等边界情况",
+            "status": "pending",
+            "depends_on": [
+                "command-handlers",
+                "network-server"
+            ]
+        },
+        {
+            "id": "test-hash",
+            "layer": "tests",
+            "file": "tests/hash_test.go",
+            "description": "集成测试：覆盖 HSET/HGET/HDEL/HGETALL/HEXISTS 五条命令，包括 field 不存在返回 nil/0、WRONGTYPE 错误等边界情况",
+            "status": "pending",
+            "depends_on": [
+                "command-handlers",
+                "network-server"
+            ]
+        }
+    ]
+}
