@@ -125,7 +125,7 @@
             "layer": "network",
             "file": "internal/network/server.go",
             "description": "实现 TCP 服务器：监听 6379 端口，每个客户端连接开一个 goroutine，循环读取 RESP 请求并返回响应。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "command-router",
                 "network-resp"

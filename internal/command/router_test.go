@@ -80,3 +80,15 @@ func TestDispatch_FunctionEntry(t *testing.T) {
 		t.Fatalf("expected bulk v, got %q", got)
 	}
 }
+
+func TestRouterDispatchParts_Helper(t *testing.T) {
+	ctx := newTestCtx()
+	router := NewRouter(ctx)
+
+	if got := router.DispatchParts("set", []string{"k", "v"}); got != respOK() {
+		t.Fatalf("expected +OK, got %q", got)
+	}
+	if got := router.DispatchParts("GET", []string{"k"}); got != respBulk("v") {
+		t.Fatalf("expected bulk v, got %q", got)
+	}
+}
