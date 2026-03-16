@@ -210,7 +210,7 @@
             "layer": "tests",
             "file": "tests/string_test.go",
             "description": "新增 redis-cli 兼容性回归测试：覆盖 SET/GET/EXPIRE/LPUSH/RPUSH/HSET 等命令在“多余参数”场景下应返回 wrong number of arguments。",
-            "status": "todo",
+            "status": "done",
             "depends_on": [
                 "command-arity-strict",
                 "network-server"
