@@ -136,7 +136,7 @@
             "layer": "cmd/server",
             "file": "cmd/server/main.go",
             "description": "程序入口：初始化 Store、加载 AOF 恢复数据、启动 expiry 定期清理 goroutine、启动 network.Server 开始监听。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "network-server"
             ]
