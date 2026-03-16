@@ -22,8 +22,9 @@
             "id": "store-core",
             "layer": "store",
             "file": "internal/store/store.go",
-            "description": "定义 Store 结构体：map[string]*types.Value 存储数据，sync.RWMutex 保证并发安全；提供 Get、Set、Delete、Keys 基础操作",
-            "status": "done",
+            "test_file": "internal/store/store_test.go",
+            "description": "定义 Store 结构体：map[string]*types.Value 存储数据，sync.RWMutex 保证并发安全；提供 Get、Set、Delete、Keys 基础操作。同时编写 store_test.go，覆盖正常路径、key 不存在、类型不匹配等行为。",
+            "status": "pending",
             "depends_on": [
                 "types-value",
                 "types-command"
@@ -33,7 +34,8 @@
             "id": "store-string",
             "layer": "store",
             "file": "internal/store/string.go",
-            "description": "实现 String 类型操作：SetString（写入 string 值）、GetString（读取并校验类型）、DeleteKey（删除 key）",
+            "test_file": "internal/store/string_test.go",
+            "description": "实现 String 类型操作：SetString（写入 string 值）、GetString（读取并校验类型）、DeleteKey（删除 key）。同时编写 string_test.go，覆盖正常路径、key 不存在、类型不匹配等行为。",
             "status": "pending",
             "depends_on": [
                 "store-core"
@@ -43,7 +45,8 @@
             "id": "store-list",
             "layer": "store",
             "file": "internal/store/list.go",
-            "description": "实现 List 类型操作：LPush（从左插入）、RPush（从右插入）、LRange（取范围切片）、LLen（返回长度）、LPop（弹出最左元素）、RPop（弹出最右元素）",
+            "test_file": "internal/store/list_test.go",
+            "description": "实现 List 类型操作：LPush、RPush、LRange、LLen、LPop、RPop。同时编写 list_test.go，覆盖正常路径、空列表、越界范围、类型不匹配等行为。",
             "status": "pending",
             "depends_on": [
                 "store-core"
@@ -53,7 +56,8 @@
             "id": "store-hash",
             "layer": "store",
             "file": "internal/store/hash.go",
-            "description": "实现 Hash 类型操作：HSet（设置 field）、HGet（获取 field）、HDel（删除 field）、HGetAll（返回所有 field-value 对）、HExists（判断 field 是否存在）",
+            "test_file": "internal/store/hash_test.go",
+            "description": "实现 Hash 类型操作：HSet、HGet、HDel、HGetAll、HExists。同时编写 hash_test.go，覆盖正常路径、field 不存在、类型不匹配等行为。",
             "status": "pending",
             "depends_on": [
                 "store-core"
@@ -63,7 +67,8 @@
             "id": "expiry-cleaner",
             "layer": "expiry",
             "file": "internal/expiry/cleaner.go",
-            "description": "实现两种过期清理策略：惰性删除（访问时检查 Expiry，过期则删除并返回 nil）；定期删除（每 100ms 扫描一批 key，清理已过期的）",
+            "test_file": "internal/expiry/cleaner_test.go",
+            "description": "实现惰性删除和定期删除两种过期清理策略。同时编写 cleaner_test.go，使用极短时间（1ms）模拟过期行为。",
             "status": "pending",
             "depends_on": [
                 "store-core"
@@ -73,17 +78,19 @@
             "id": "persistence-aof",
             "layer": "persistence",
             "file": "internal/persistence/aof.go",
-            "description": "实现 AOF 持久化：WriteCommand（将命令原文追加写入 aof 文件）；Replay（服务器启动时重新执行 aof 文件中的所有命令恢复数据）",
+            "test_file": "internal/persistence/aof_test.go",
+            "description": "实现 AOF 持久化：WriteCommand 和 Replay。同时编写 aof_test.go，使用临时文件，测试结束后清理。",
             "status": "pending",
             "depends_on": [
                 "store-core"
             ]
         },
         {
-            "id": "command-router",
+            "id": "command-handlers",
             "layer": "command",
-            "file": "internal/command/router.go",
-            "description": "实现命令路由表：将命令名（大写）映射到对应 handler 函数；提供 Dispatch 入口，接收 types.Command 返回 RESP 响应字节",
+            "file": "internal/command/handlers.go",
+            "test_file": "internal/command/handlers_test.go",
+            "description": "实现全部 16 条命令的 handler 函数。同时编写 handlers_test.go，初始化真实 store 实例进行测试。",
             "status": "pending",
             "depends_on": [
                 "store-string",
@@ -94,10 +101,10 @@
             ]
         },
         {
-            "id": "command-handlers",
+            "id": "command-router",
             "layer": "command",
-            "file": "internal/command/handlers.go",
-            "description": "实现全部 16 条命令的 handler 函数。String(5)：SET、GET、DEL、EXPIRE、TTL；List(6)：LPUSH、RPUSH、LRANGE、LLEN、LPOP、RPOP；Hash(5)：HSET、HGET、HDEL、HGETALL、HEXISTS",
+            "file": "internal/command/router.go",
+            "description": "实现命令路由表：将命令名映射到对应 handler 函数，提供 Dispatch 入口。",
             "status": "pending",
             "depends_on": [
                 "command-handlers"
@@ -107,7 +114,7 @@
             "id": "network-resp",
             "layer": "network",
             "file": "internal/network/resp.go",
-            "description": "实现 RESP 协议解析与序列化：Parse（从 bufio.Reader 读取并解析 RESP 格式，返回 types.Command）；Serialize（将命令执行结果序列化为 RESP 格式字节流，覆盖 SimpleString、Error、Integer、BulkString、Array 五种类型）",
+            "description": "实现 RESP 协议解析与序列化：Parse 和 Serialize，覆盖五种 RESP 数据类型。",
             "status": "pending",
             "depends_on": [
                 "command-router"
@@ -117,10 +124,10 @@
             "id": "network-server",
             "layer": "network",
             "file": "internal/network/server.go",
-            "description": "实现 TCP 服务器：监听 6379 端口，每个客户端连接开一个 goroutine；循环读取 RESP 请求 → 调用 command.Dispatch → 写回 RESP 响应；处理连接关闭和错误",
+            "description": "实现 TCP 服务器：监听 6379 端口，每个客户端连接开一个 goroutine，循环读取 RESP 请求并返回响应。",
             "status": "pending",
             "depends_on": [
-                "command-handlers",
+                "command-router",
                 "network-resp"
             ]
         },
@@ -128,7 +135,7 @@
             "id": "server-main",
             "layer": "cmd/server",
             "file": "cmd/server/main.go",
-            "description": "程序入口：初始化 Store、加载 AOF 恢复数据、启动 expiry 定期清理 goroutine、启动 network.Server 开始监听",
+            "description": "程序入口：初始化 Store、加载 AOF 恢复数据、启动 expiry 定期清理 goroutine、启动 network.Server 开始监听。",
             "status": "pending",
             "depends_on": [
                 "network-server"
@@ -138,10 +145,9 @@
             "id": "test-string",
             "layer": "tests",
             "file": "tests/string_test.go",
-            "description": "集成测试：覆盖 SET/GET/DEL/EXPIRE/TTL 五条命令的正常路径、WRONGTYPE 错误、key 不存在返回 nil、过期后返回 nil 等边界情况",
+            "description": "端到端集成测试：建立真实 TCP 连接，覆盖 SET/GET/DEL/EXPIRE/TTL 五条命令的正常路径和边界情况。",
             "status": "pending",
             "depends_on": [
-                "command-handlers",
                 "network-server"
             ]
         },
@@ -149,10 +155,9 @@
             "id": "test-list",
             "layer": "tests",
             "file": "tests/list_test.go",
-            "description": "集成测试：覆盖 LPUSH/RPUSH/LRANGE/LLEN/LPOP/RPOP 六条命令，包括空列表、越界范围、WRONGTYPE 错误等边界情况",
+            "description": "端到端集成测试：建立真实 TCP 连接，覆盖 LPUSH/RPUSH/LRANGE/LLEN/LPOP/RPOP 六条命令的正常路径和边界情况。",
             "status": "pending",
             "depends_on": [
-                "command-handlers",
                 "network-server"
             ]
         },
@@ -160,10 +165,9 @@
             "id": "test-hash",
             "layer": "tests",
             "file": "tests/hash_test.go",
-            "description": "集成测试：覆盖 HSET/HGET/HDEL/HGETALL/HEXISTS 五条命令，包括 field 不存在返回 nil/0、WRONGTYPE 错误等边界情况",
+            "description": "端到端集成测试：建立真实 TCP 连接，覆盖 HSET/HGET/HDEL/HGETALL/HEXISTS 五条命令的正常路径和边界情况。",
             "status": "pending",
             "depends_on": [
-                "command-handlers",
                 "network-server"
             ]
         }
