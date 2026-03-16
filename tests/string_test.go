@@ -224,3 +224,28 @@ func TestString_CommandArityErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestRedisCompat_ExtraArgs_ReturnWrongNumberOfArguments(t *testing.T) {
+	addr, cleanup := startStringTestServer(t)
+	defer cleanup()
+
+	rw := connectStringClient(t, addr)
+
+	errCases := []struct {
+		args []string
+		want string
+	}{
+		{args: []string{"SET", "k", "v", "extra"}, want: "wrong number of arguments for 'SET' command"},
+		{args: []string{"GET", "k", "extra"}, want: "wrong number of arguments for 'GET' command"},
+		{args: []string{"EXPIRE", "k", "10", "extra"}, want: "wrong number of arguments for 'EXPIRE' command"},
+		{args: []string{"LPUSH", "list", "v", "extra"}, want: "wrong number of arguments for 'LPUSH' command"},
+		{args: []string{"RPUSH", "list", "v", "extra"}, want: "wrong number of arguments for 'RPUSH' command"},
+		{args: []string{"HSET", "h", "f", "v", "extra"}, want: "wrong number of arguments for 'HSET' command"},
+	}
+
+	for _, tc := range errCases {
+		t.Run(fmt.Sprintf("%s_extra_args", tc.args[0]), func(t *testing.T) {
+			requireErrorContains(t, sendCommand(t, rw, tc.args...), tc.want)
+		})
+	}
+}
