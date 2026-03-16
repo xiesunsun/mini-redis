@@ -9,7 +9,7 @@
 - RESP 协议格式      → docs/resp-protocol.md
 - 支持的命令列表     → docs/commands.md
 - 测试规范 → docs/testing.md
-- 开发进度跟踪 → docs/progress.json
+- 开发任务以及进度跟踪 → docs/progress.json
 
 ## 架构分层
 
