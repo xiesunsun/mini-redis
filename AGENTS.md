@@ -63,7 +63,7 @@ types → store → expiry      → command → network → cmd/server
    - commit message 格式：`类型: 描述`
    - 例如：`feat: 实现 SET/GET 命令`、`fix: 修复 RESP 解析错误`
 6. 若 PR 合并通过，转到 7；否则携带人类反馈回到 3
-7. 切回 main，拉取最新代码，删除功能分支，更新 docs/progress.json 中对应任务状态为 done，输出：任务 XXX 已完成，docs/progress.json 已更新。：
+7. 更新 docs/progress.json 中对应任务状态为 done，切回 main，拉取最新代码，删除功能分支，，输出：任务 XXX 已完成，docs/progress.json 已更新。：
    `git checkout main && git pull origin main && git branch -d XXX`
 
 ## 遇到不确定的情况
