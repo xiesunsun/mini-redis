@@ -80,7 +80,7 @@
             "file": "internal/persistence/aof.go",
             "test_file": "internal/persistence/aof_test.go",
             "description": "实现 AOF 持久化：WriteCommand 和 Replay。同时编写 aof_test.go，使用临时文件，测试结束后清理。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "store-core"
             ]
