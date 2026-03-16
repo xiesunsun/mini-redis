@@ -8,6 +8,7 @@
 - 架构设计与分层规则 → docs/architecture.md
 - RESP 协议格式      → docs/resp-protocol.md
 - 支持的命令列表     → docs/commands.md
+- 开发进度跟踪 → docs/progress.json
 
 ## 架构分层
 
@@ -39,7 +40,7 @@ types → store → expiry      → command → network → cmd/server
 
 ## 开发工作流
 
-0. 收到需求
+0. 收到需求，先读 docs/progress.json 了解当前项目进度
 1. 确认当前在 main 分支，拉取最新代码：
    `git checkout main && git pull origin main`
 2. 创建新分支：
@@ -54,7 +55,7 @@ types → store → expiry      → command → network → cmd/server
    - commit message 格式：`类型: 描述`
    - 例如：`feat: 实现 SET/GET 命令`、`fix: 修复 RESP 解析错误`
 6. 若 PR 合并通过，转到 7；否则携带人类反馈回到 3
-7. 切回 main，拉取最新代码，删除功能分支，等待下一个需求：
+7. 切回 main，拉取最新代码，删除功能分支，更新 docs/progress.json 中对应任务状态为 done，等待下一个需求：
    `git checkout main && git pull origin main && git branch -d XXX`
 
 ## 遇到不确定的情况
