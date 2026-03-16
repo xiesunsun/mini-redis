@@ -58,7 +58,17 @@ func (r *Router) Dispatch(cmd types.Command) string {
 	return handler(cmd, r.ctx)
 }
 
+// DispatchParts is a helper that dispatches command name and args directly.
+func (r *Router) DispatchParts(name string, args []string) string {
+	return r.Dispatch(types.Command{Name: name, Args: args})
+}
+
 // Dispatch is a convenience entry point that creates a default router and executes cmd.
 func Dispatch(cmd types.Command, ctx *Context) string {
 	return NewRouter(ctx).Dispatch(cmd)
+}
+
+// DispatchParts is a convenience entry point for name/args inputs.
+func DispatchParts(name string, args []string, ctx *Context) string {
+	return Dispatch(types.Command{Name: name, Args: args}, ctx)
 }
