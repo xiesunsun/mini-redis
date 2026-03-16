@@ -58,7 +58,7 @@
             "file": "internal/store/hash.go",
             "test_file": "internal/store/hash_test.go",
             "description": "实现 Hash 类型操作：HSet、HGet、HDel、HGetAll、HExists。同时编写 hash_test.go，覆盖正常路径、field 不存在、类型不匹配等行为。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "store-core"
             ]
