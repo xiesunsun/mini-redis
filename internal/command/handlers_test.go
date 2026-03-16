@@ -1,10 +1,12 @@
 package command
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/xiesunsun/mini-redis/internal/persistence"
 	"github.com/xiesunsun/mini-redis/internal/store"
 	"github.com/xiesunsun/mini-redis/internal/types"
 )
@@ -591,5 +593,121 @@ func TestHandleRespBulk_Format(t *testing.T) {
 	want := "$5\r\nhello\r\n"
 	if got := respBulk(s); got != want {
 		t.Fatalf("respBulk(%q) = %q, want %q", s, got, want)
+	}
+}
+
+func newClosedAOFCtx(t *testing.T) *Context {
+	t.Helper()
+
+	aof, err := persistence.New(filepath.Join(t.TempDir(), "appendonly.aof"))
+	if err != nil {
+		t.Fatalf("create AOF: %v", err)
+	}
+	if err := aof.Close(); err != nil {
+		t.Fatalf("close AOF: %v", err)
+	}
+
+	return &Context{
+		Store: store.New(),
+		AOF:   aof,
+	}
+}
+
+func TestWriteCommands_AOFWriteError(t *testing.T) {
+	cases := []struct {
+		name    string
+		prepare func(ctx *Context)
+		invoke  func(ctx *Context) string
+	}{
+		{
+			name: "SET",
+			invoke: func(ctx *Context) string {
+				return HandleSet(cmd("SET", "k", "v"), ctx)
+			},
+		},
+		{
+			name: "DEL",
+			prepare: func(ctx *Context) {
+				ctx.Store.SetString("k", "v")
+			},
+			invoke: func(ctx *Context) string {
+				return HandleDel(cmd("DEL", "k"), ctx)
+			},
+		},
+		{
+			name: "EXPIRE",
+			prepare: func(ctx *Context) {
+				ctx.Store.SetString("k", "v")
+			},
+			invoke: func(ctx *Context) string {
+				return HandleExpire(cmd("EXPIRE", "k", "10"), ctx)
+			},
+		},
+		{
+			name: "LPUSH",
+			invoke: func(ctx *Context) string {
+				return HandleLPush(cmd("LPUSH", "list", "v"), ctx)
+			},
+		},
+		{
+			name: "RPUSH",
+			invoke: func(ctx *Context) string {
+				return HandleRPush(cmd("RPUSH", "list", "v"), ctx)
+			},
+		},
+		{
+			name: "LPOP",
+			prepare: func(ctx *Context) {
+				if _, err := ctx.Store.RPush("list", "v"); err != nil {
+					t.Fatalf("prepare list for LPOP: %v", err)
+				}
+			},
+			invoke: func(ctx *Context) string {
+				return HandleLPop(cmd("LPOP", "list"), ctx)
+			},
+		},
+		{
+			name: "RPOP",
+			prepare: func(ctx *Context) {
+				if _, err := ctx.Store.RPush("list", "v"); err != nil {
+					t.Fatalf("prepare list for RPOP: %v", err)
+				}
+			},
+			invoke: func(ctx *Context) string {
+				return HandleRPop(cmd("RPOP", "list"), ctx)
+			},
+		},
+		{
+			name: "HSET",
+			invoke: func(ctx *Context) string {
+				return HandleHSet(cmd("HSET", "h", "f", "v"), ctx)
+			},
+		},
+		{
+			name: "HDEL",
+			prepare: func(ctx *Context) {
+				if _, err := ctx.Store.HSet("h", "f", "v"); err != nil {
+					t.Fatalf("prepare hash for HDEL: %v", err)
+				}
+			},
+			invoke: func(ctx *Context) string {
+				return HandleHDel(cmd("HDEL", "h", "f"), ctx)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := newClosedAOFCtx(t)
+			if tc.prepare != nil {
+				tc.prepare(ctx)
+			}
+
+			got := tc.invoke(ctx)
+			want := respErr("AOF write failed")
+			if got != want {
+				t.Fatalf("expected %q, got %q", want, got)
+			}
+		})
 	}
 }

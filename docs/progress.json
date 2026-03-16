@@ -188,7 +188,7 @@
             "file": "internal/command/handlers.go",
             "test_file": "internal/command/handlers_test.go",
             "description": "修复写 AOF 错误被忽略的问题：写入失败时向客户端返回错误响应，并补充对应单测，避免“命令返回成功但未持久化”的数据一致性风险。",
-            "status": "todo",
+            "status": "done",
             "depends_on": [
                 "command-handlers",
                 "persistence-aof"

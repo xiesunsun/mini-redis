@@ -21,11 +21,16 @@ type Context struct {
 // HandlerFunc is the function type for all command handlers.
 type HandlerFunc func(cmd types.Command, ctx *Context) string
 
-// writeAOF appends cmd to the AOF log. No-op when ctx.AOF is nil.
-func writeAOF(ctx *Context, cmd types.Command) {
-	if ctx.AOF != nil {
-		_ = ctx.AOF.WriteCommand(cmd)
+// writeAOF appends cmd to the AOF log.
+// It returns an RESP error when persistence fails.
+func writeAOF(ctx *Context, cmd types.Command) string {
+	if ctx.AOF == nil {
+		return ""
 	}
+	if err := ctx.AOF.WriteCommand(cmd); err != nil {
+		return respErr("AOF write failed")
+	}
+	return ""
 }
 
 // RESP encoding helpers.
@@ -62,7 +67,9 @@ func HandleSet(cmd types.Command, ctx *Context) string {
 		return respErr("wrong number of arguments for 'SET' command")
 	}
 	ctx.Store.SetString(cmd.Args[0], cmd.Args[1])
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respOK()
 }
 
@@ -92,7 +99,9 @@ func HandleDel(cmd types.Command, ctx *Context) string {
 		return respInt(0)
 	}
 	ctx.Store.Delete(key)
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respInt(1)
 }
 
@@ -110,7 +119,9 @@ func HandleExpire(cmd types.Command, ctx *Context) string {
 		return respInt(0)
 	}
 	v.Expiry = time.Now().Add(time.Duration(secs) * time.Second)
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respInt(1)
 }
 
@@ -151,7 +162,9 @@ func HandleLPush(cmd types.Command, ctx *Context) string {
 		}
 		return respErr(err.Error())
 	}
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respInt(int64(n))
 }
 
@@ -167,7 +180,9 @@ func HandleRPush(cmd types.Command, ctx *Context) string {
 		}
 		return respErr(err.Error())
 	}
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respInt(int64(n))
 }
 
@@ -224,7 +239,9 @@ func HandleLPop(cmd types.Command, ctx *Context) string {
 		}
 		return respErr(err.Error())
 	}
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respBulk(val)
 }
 
@@ -243,7 +260,9 @@ func HandleRPop(cmd types.Command, ctx *Context) string {
 		}
 		return respErr(err.Error())
 	}
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respBulk(val)
 }
 
@@ -261,7 +280,9 @@ func HandleHSet(cmd types.Command, ctx *Context) string {
 		}
 		return respErr(err.Error())
 	}
-	writeAOF(ctx, cmd)
+	if errResp := writeAOF(ctx, cmd); errResp != "" {
+		return errResp
+	}
 	return respInt(int64(n))
 }
 
@@ -296,7 +317,9 @@ func HandleHDel(cmd types.Command, ctx *Context) string {
 		return respErr(err.Error())
 	}
 	if n > 0 {
-		writeAOF(ctx, cmd)
+		if errResp := writeAOF(ctx, cmd); errResp != "" {
+			return errResp
+		}
 	}
 	return respInt(int64(n))
 }
