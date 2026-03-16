@@ -115,7 +115,7 @@
             "layer": "network",
             "file": "internal/network/resp.go",
             "description": "实现 RESP 协议解析与序列化：Parse 和 Serialize，覆盖五种 RESP 数据类型。",
-            "status": "pending",
+            "status": "done",
             "depends_on": [
                 "command-router"
             ]
