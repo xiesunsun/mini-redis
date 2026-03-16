@@ -527,6 +527,41 @@ func TestHandleHExists_WrongType(t *testing.T) {
 	}
 }
 
+func TestHandlers_ExtraArgsStrictArity(t *testing.T) {
+	cases := []struct {
+		name    string
+		handler HandlerFunc
+		cmd     types.Command
+		want    string
+	}{
+		{"SET", HandleSet, cmd("SET", "k", "v", "x"), respErr("wrong number of arguments for 'SET' command")},
+		{"GET", HandleGet, cmd("GET", "k", "x"), respErr("wrong number of arguments for 'GET' command")},
+		{"DEL", HandleDel, cmd("DEL", "k", "x"), respErr("wrong number of arguments for 'DEL' command")},
+		{"EXPIRE", HandleExpire, cmd("EXPIRE", "k", "100", "x"), respErr("wrong number of arguments for 'EXPIRE' command")},
+		{"TTL", HandleTTL, cmd("TTL", "k", "x"), respErr("wrong number of arguments for 'TTL' command")},
+		{"LPUSH", HandleLPush, cmd("LPUSH", "list", "v", "x"), respErr("wrong number of arguments for 'LPUSH' command")},
+		{"RPUSH", HandleRPush, cmd("RPUSH", "list", "v", "x"), respErr("wrong number of arguments for 'RPUSH' command")},
+		{"LRANGE", HandleLRange, cmd("LRANGE", "list", "0", "-1", "x"), respErr("wrong number of arguments for 'LRANGE' command")},
+		{"LLEN", HandleLLen, cmd("LLEN", "list", "x"), respErr("wrong number of arguments for 'LLEN' command")},
+		{"LPOP", HandleLPop, cmd("LPOP", "list", "x"), respErr("wrong number of arguments for 'LPOP' command")},
+		{"RPOP", HandleRPop, cmd("RPOP", "list", "x"), respErr("wrong number of arguments for 'RPOP' command")},
+		{"HSET", HandleHSet, cmd("HSET", "h", "f", "v", "x"), respErr("wrong number of arguments for 'HSET' command")},
+		{"HGET", HandleHGet, cmd("HGET", "h", "f", "x"), respErr("wrong number of arguments for 'HGET' command")},
+		{"HDEL", HandleHDel, cmd("HDEL", "h", "f", "x"), respErr("wrong number of arguments for 'HDEL' command")},
+		{"HGETALL", HandleHGetAll, cmd("HGETALL", "h", "x"), respErr("wrong number of arguments for 'HGETALL' command")},
+		{"HEXISTS", HandleHExists, cmd("HEXISTS", "h", "f", "x"), respErr("wrong number of arguments for 'HEXISTS' command")},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.handler(tc.cmd, newTestCtx())
+			if got != tc.want {
+				t.Fatalf("expected %q, got %q", tc.want, got)
+			}
+		})
+	}
+}
+
 // --- Additional edge cases ---
 
 func TestHandleGet_ExpiredKey(t *testing.T) {

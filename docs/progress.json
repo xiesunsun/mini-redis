@@ -177,7 +177,7 @@
             "file": "internal/command/handlers.go",
             "test_file": "internal/command/handlers_test.go",
             "description": "将 16 条核心命令的参数校验从“至少 N 个参数”改为“必须等于 N 个参数（或命令规范要求的数量）”，多余参数时返回 wrong number of arguments，确保与官方 Redis 行为一致。",
-            "status": "todo",
+            "status": "done",
             "depends_on": [
                 "command-handlers"
             ]

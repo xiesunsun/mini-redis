@@ -29,11 +29,11 @@ func writeAOF(ctx *Context, cmd types.Command) {
 }
 
 // RESP encoding helpers.
-func respOK() string              { return "+OK\r\n" }
-func respNil() string             { return "$-1\r\n" }
-func respInt(n int64) string      { return fmt.Sprintf(":%d\r\n", n) }
-func respErr(msg string) string   { return fmt.Sprintf("-ERR %s\r\n", msg) }
-func respBulk(s string) string    { return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s) }
+func respOK() string            { return "+OK\r\n" }
+func respNil() string           { return "$-1\r\n" }
+func respInt(n int64) string    { return fmt.Sprintf(":%d\r\n", n) }
+func respErr(msg string) string { return fmt.Sprintf("-ERR %s\r\n", msg) }
+func respBulk(s string) string  { return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s) }
 func respWrongType() string {
 	return fmt.Sprintf("-%s\r\n", store.ErrWrongType.Error())
 }
@@ -58,7 +58,7 @@ func isWrongType(err error) bool {
 
 // HandleSet handles: SET key value → +OK
 func HandleSet(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return respErr("wrong number of arguments for 'SET' command")
 	}
 	ctx.Store.SetString(cmd.Args[0], cmd.Args[1])
@@ -68,7 +68,7 @@ func HandleSet(cmd types.Command, ctx *Context) string {
 
 // HandleGet handles: GET key → bulk string or nil
 func HandleGet(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 1 {
+	if len(cmd.Args) != 1 {
 		return respErr("wrong number of arguments for 'GET' command")
 	}
 	v := expiry.GetOrExpire(ctx.Store, cmd.Args[0])
@@ -83,7 +83,7 @@ func HandleGet(cmd types.Command, ctx *Context) string {
 
 // HandleDel handles: DEL key → integer (0 or 1)
 func HandleDel(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 1 {
+	if len(cmd.Args) != 1 {
 		return respErr("wrong number of arguments for 'DEL' command")
 	}
 	key := cmd.Args[0]
@@ -98,7 +98,7 @@ func HandleDel(cmd types.Command, ctx *Context) string {
 
 // HandleExpire handles: EXPIRE key seconds → 0 or 1
 func HandleExpire(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return respErr("wrong number of arguments for 'EXPIRE' command")
 	}
 	secs, err := strconv.ParseInt(cmd.Args[1], 10, 64)
@@ -116,7 +116,7 @@ func HandleExpire(cmd types.Command, ctx *Context) string {
 
 // HandleTTL handles: TTL key → seconds / -1 (no expiry) / -2 (not found)
 func HandleTTL(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 1 {
+	if len(cmd.Args) != 1 {
 		return respErr("wrong number of arguments for 'TTL' command")
 	}
 	v := ctx.Store.Get(cmd.Args[0])
@@ -141,7 +141,7 @@ func HandleTTL(cmd types.Command, ctx *Context) string {
 
 // HandleLPush handles: LPUSH key value → list length
 func HandleLPush(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return respErr("wrong number of arguments for 'LPUSH' command")
 	}
 	n, err := ctx.Store.LPush(cmd.Args[0], cmd.Args[1])
@@ -157,7 +157,7 @@ func HandleLPush(cmd types.Command, ctx *Context) string {
 
 // HandleRPush handles: RPUSH key value → list length
 func HandleRPush(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return respErr("wrong number of arguments for 'RPUSH' command")
 	}
 	n, err := ctx.Store.RPush(cmd.Args[0], cmd.Args[1])
@@ -173,7 +173,7 @@ func HandleRPush(cmd types.Command, ctx *Context) string {
 
 // HandleLRange handles: LRANGE key start stop → array
 func HandleLRange(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 3 {
+	if len(cmd.Args) != 3 {
 		return respErr("wrong number of arguments for 'LRANGE' command")
 	}
 	start, err := strconv.Atoi(cmd.Args[1])
@@ -196,7 +196,7 @@ func HandleLRange(cmd types.Command, ctx *Context) string {
 
 // HandleLLen handles: LLEN key → list length (0 if key does not exist)
 func HandleLLen(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 1 {
+	if len(cmd.Args) != 1 {
 		return respErr("wrong number of arguments for 'LLEN' command")
 	}
 	n, err := ctx.Store.LLen(cmd.Args[0])
@@ -211,7 +211,7 @@ func HandleLLen(cmd types.Command, ctx *Context) string {
 
 // HandleLPop handles: LPOP key → bulk string or nil
 func HandleLPop(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 1 {
+	if len(cmd.Args) != 1 {
 		return respErr("wrong number of arguments for 'LPOP' command")
 	}
 	val, err := ctx.Store.LPop(cmd.Args[0])
@@ -230,7 +230,7 @@ func HandleLPop(cmd types.Command, ctx *Context) string {
 
 // HandleRPop handles: RPOP key → bulk string or nil
 func HandleRPop(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 1 {
+	if len(cmd.Args) != 1 {
 		return respErr("wrong number of arguments for 'RPOP' command")
 	}
 	val, err := ctx.Store.RPop(cmd.Args[0])
@@ -251,7 +251,7 @@ func HandleRPop(cmd types.Command, ctx *Context) string {
 
 // HandleHSet handles: HSET key field value → 1 (new field) or 0 (updated)
 func HandleHSet(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 3 {
+	if len(cmd.Args) != 3 {
 		return respErr("wrong number of arguments for 'HSET' command")
 	}
 	n, err := ctx.Store.HSet(cmd.Args[0], cmd.Args[1], cmd.Args[2])
@@ -267,7 +267,7 @@ func HandleHSet(cmd types.Command, ctx *Context) string {
 
 // HandleHGet handles: HGET key field → bulk string or nil
 func HandleHGet(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return respErr("wrong number of arguments for 'HGET' command")
 	}
 	val, err := ctx.Store.HGet(cmd.Args[0], cmd.Args[1])
@@ -285,7 +285,7 @@ func HandleHGet(cmd types.Command, ctx *Context) string {
 
 // HandleHDel handles: HDEL key field → 0 or 1
 func HandleHDel(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return respErr("wrong number of arguments for 'HDEL' command")
 	}
 	n, err := ctx.Store.HDel(cmd.Args[0], cmd.Args[1])
@@ -303,7 +303,7 @@ func HandleHDel(cmd types.Command, ctx *Context) string {
 
 // HandleHGetAll handles: HGETALL key → flat array of field-value pairs (empty if not found)
 func HandleHGetAll(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 1 {
+	if len(cmd.Args) != 1 {
 		return respErr("wrong number of arguments for 'HGETALL' command")
 	}
 	items, err := ctx.Store.HGetAll(cmd.Args[0])
@@ -318,7 +318,7 @@ func HandleHGetAll(cmd types.Command, ctx *Context) string {
 
 // HandleHExists handles: HEXISTS key field → 1 or 0
 func HandleHExists(cmd types.Command, ctx *Context) string {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return respErr("wrong number of arguments for 'HEXISTS' command")
 	}
 	n, err := ctx.Store.HExists(cmd.Args[0], cmd.Args[1])
