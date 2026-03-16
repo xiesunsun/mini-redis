@@ -2,19 +2,38 @@
 
 ERRORS=0
 
+# 依赖检查函数
 check() {
   local pkg=$1
   local forbidden=$2
   local reason=$3
   local fix=$4
   local result
-  result=$(grep -rn "$forbidden" "internal/$pkg/" 2>/dev/null | grep ".go")
+  result=$(grep -rn "$forbidden" "internal/$pkg/" 2>/dev/null | grep ".go" | grep -v "_test.go")
   if [ -n "$result" ]; then
     echo "❌ 违规：internal/$pkg 不能引用 $forbidden"
     echo "   原因：$reason"
     echo "   修复：$fix"
     echo "   参考：docs/architecture.md"
     echo "$result"
+    echo ""
+    ERRORS=$((ERRORS + 1))
+  fi
+}
+
+# 测试文件存在性检查函数
+check_test_exists() {
+  local file=$1
+  local test_file="${file%.go}_test.go"
+
+  # 只检查有实际内容的文件（排除只有 package 声明、空行、注释的文件）
+  local line_count
+  line_count=$(grep -v "^package\|^$\|^//" "$file" 2>/dev/null | wc -l)
+
+  if [ "$line_count" -gt 0 ] && [ ! -f "$test_file" ]; then
+    echo "❌ 缺少测试文件：$test_file"
+    echo "   原因：$file 已有实现，需要对应的单元测试"
+    echo "   参考：docs/testing.md"
     echo ""
     ERRORS=$((ERRORS + 1))
   fi
@@ -72,6 +91,13 @@ check "persistence" "internal/network" \
 check "command" "internal/network" \
   "command 是命令层，位于 network 层下方" \
   "把这个逻辑移到 internal/network 中"
+
+# 测试文件存在性检查（types 层无需测试）
+for file in $(find internal -name "*.go" \
+  | grep -v "_test.go" \
+  | grep -v "internal/types"); do
+  check_test_exists "$file"
+done
 
 if [ $ERRORS -eq 0 ]; then
   echo "✅ 依赖检查通过"
