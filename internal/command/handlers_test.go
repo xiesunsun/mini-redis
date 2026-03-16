@@ -1,7 +1,6 @@
 package command
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -554,7 +553,7 @@ func TestHandleDel_ExpiredKey(t *testing.T) {
 
 func TestHandleRespBulk_Format(t *testing.T) {
 	s := "hello"
-	want := fmt.Sprintf("$5\r\nhello\r\n")
+	want := "$5\r\nhello\r\n"
 	if got := respBulk(s); got != want {
 		t.Fatalf("respBulk(%q) = %q, want %q", s, got, want)
 	}
